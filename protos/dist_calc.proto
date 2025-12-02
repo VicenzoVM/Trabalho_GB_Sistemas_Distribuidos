@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package middleware;
+
+// Serviço principal de processamento distribuído
+service DistributedCalculator {
+
+  // RPC simples: soma dois números
+  rpc Sum (SumRequest) returns (SumResponse);
+
+  // RPC com carga: servidor executa N operações e devolve o tempo gasto
+  rpc Workload (WorkloadRequest) returns (WorkloadResponse);
+
+  // Streaming: cliente envia vários números, servidor calcula a média
+  rpc StreamAverage (stream Number) returns (AverageResponse);
+}
+
+message SumRequest {
+  double a = 1;
+  double b = 2;
+}
+
+message SumResponse {
+  double result = 1;
+}
+
+message WorkloadRequest {
+  int32 operations = 1;      // número de iterações
+  int32 payload_size = 2;    // carga interna para gerar trabalho
+}
+
+message WorkloadResponse {
+  double time_ms = 1;        // tempo total da execução em ms
+}
+
+message Number {
+  double value = 1;
+}
+
+message AverageResponse {
+  double average = 1;
+  int32 count = 2;
+}

@@ -9,16 +9,20 @@ def run_benchmark():
     channel = grpc.insecure_channel('192.168.1.14:50051')
     stub = dist_calc_pb2_grpc.DistributedCalculatorStub(channel)
 
-    print("Iniciando Benchmark do Middleware gRPC...")
+    print("\n" + "#"*50)
+    print(" INICIANDO BENCHMARK DE PERFORMANCE gRPC")
+    print("#"*50)
     
     test_loads = [1, 10, 100, 1000, 5000, 10000, 50000, 100000]
     payload_fixed = 100  
     results = []
 
+    print(f"{'OPS':<10} | {'SERVER(ms)':<12} | {'TOTAL(ms)':<12} | {'REDE(ms)':<12}")
+    print("-" * 52)
+
     try:
         for ops in test_loads:
-            print(f"Testando carga: {ops} operações...")
-
+            
             start_time = time.time()
             
             response = stub.Workload(dist_calc_pb2.WorkloadRequest(
@@ -32,6 +36,8 @@ def run_benchmark():
             server_time_ms = response.time_ms 
             network_latency = total_time_ms - server_time_ms 
             
+            print(f"{ops:<10} | {server_time_ms:<12.4f} | {total_time_ms:<12.4f} | {network_latency:<12.4f}")
+            
             results.append({
                 "operations": ops,
                 "server_time": server_time_ms,
@@ -40,7 +46,7 @@ def run_benchmark():
             })
 
     except grpc.RpcError as e:
-        print(f"Erro gRPC: {e}")
+        print(f"\n[ERRO] Falha gRPC: {e}")
         return
 
     csv_filename = 'resultados_benchmark.csv'
@@ -50,24 +56,28 @@ def run_benchmark():
         for r in results:
             writer.writerow([r["operations"], r["server_time"], r["total_time"], r["latency_est"]])
     
-    print(f"\nDados salvos em {csv_filename}")
+    print("-" * 52)
+    print(f"Dados salvos em '{csv_filename}'")
+    print("Gerando gráfico...")
 
     ops_x = [r["operations"] for r in results]
     server_y = [r["server_time"] for r in results]
     total_y = [r["total_time"] for r in results]
 
     plt.figure(figsize=(10, 6))
+    
+    plt.xscale('log') 
+    
     plt.plot(ops_x, total_y, marker='o', label='Tempo Total (Cliente)', linestyle='-')
     plt.plot(ops_x, server_y, marker='x', label='Tempo Processamento (Servidor)', linestyle='--')
     
-    plt.title('Performance do Middleware gRPC: Carga vs Tempo')
-    plt.xlabel('Número de Operações (Carga)')
+    plt.xlabel('Número de Operações (Log)')
     plt.ylabel('Tempo (ms)')
+    plt.title('Performance: Tempo Total vs Tempo de Processamento')
     plt.legend()
-    plt.grid(True)
+    plt.grid(True, which="both", ls="-", alpha=0.5)
     
-    plt.savefig('grafico_benchmark.png')
-    print("Gráfico salvo como grafico_benchmark.png")
+    print("Gráfico gerado. Exibindo na tela...")
     plt.show()
 
 if __name__ == '__main__':
